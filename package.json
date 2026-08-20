@@ -1,0 +1,28 @@
+{
+  "name": "dsh-md-preview",
+  "version": "0.1.0",
+  "description": "在 dsh Web 界面中阅读工作区里的 Markdown 文件：侧边栏入口 + 嵌套目录树 + 内联渲染（明暗主题自适应）",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "sync": "bash scripts/sync.sh"
+  }
+}
