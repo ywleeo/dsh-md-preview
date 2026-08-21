@@ -713,16 +713,63 @@ window.__ModuleLoader__.load({
         var lines = String(src || '').replace(/\r\n?/g, '\n').split('\n')
         var html = ''
         var i = 0
-        var listType = null
-        function closeList() {
-          if (listType !== null) { html += '</' + listType + '>'; listType = null }
+        // 块级起始行：段落收集器必须在此停下，否则会把列表项/标题/引用/围栏等
+        // 吞进 <p> 里（典型症状：紧跟段落且没有空行的 "- 条目" 变成字面文本，
+        // 列表样式与缩进完全丢失）。
+        function isBlockStart(line) {
+          if (/^\s*(```|~~~)/.test(line)) return true            // 代码围栏
+          if (/^\s*#{1,6}\s+/.test(line)) return true            // 标题
+          if (/^\s*>\s?/.test(line)) return true                 // 引用
+          if (/^\s*[-*+]\s+/.test(line)) return true             // 无序列表项
+          if (/^\s*\d+\.\s+/.test(line)) return true             // 有序列表项
+          if (/^\s*([-*_])\1{2,}\s*$/.test(line)) return true    // 分隔线
+          // 表格（与主循环同一近似：本行含 | 且下一行是分隔行）
+          if (line.indexOf('|') !== -1 && i + 1 < lines.length && isTableSep(lines[i + 1])) return true
+          return false
         }
+
+        // ---- 列表：栈式嵌套 + 多行条目 ----
+        var listStack = []   // 栈顶是当前列表 { type: 'ul'|'ol', indent: 条目缩进空格数, liOpen: 当前条目 <li> 是否已打开 }
+        function closeLists() {
+          while (listStack.length > 0) {
+            var top = listStack[listStack.length - 1]
+            if (top.liOpen) { html += '</li>'; top.liOpen = false }
+            html += '</' + top.type + '>'
+            listStack.pop()
+          }
+        }
+        function pushListItem(match) {
+          var indent = match[1].length
+          var type = /^\d+\.$/.test(match[2]) ? 'ol' : 'ul'
+          var top = listStack.length > 0 ? listStack[listStack.length - 1] : null
+          // 同级类型切换（ul↔ol）或回到更浅层级：先关掉这些列表（含其中打开的条目）
+          while (top !== null && (top.indent > indent || (top.indent === indent && top.type !== type))) {
+            if (top.liOpen) { html += '</li>'; top.liOpen = false }
+            html += '</' + top.type + '>'
+            listStack.pop()
+            top = listStack.length > 0 ? listStack[listStack.length - 1] : null
+          }
+          if (top !== null && top.indent === indent) {
+            // 同级继续：关掉上一个条目再开新的
+            if (top.liOpen) { html += '</li>'; top.liOpen = false }
+            html += '<li>'
+            top.liOpen = true
+          } else {
+            // 进入更深的嵌套（父条目保持打开，嵌套列表在其内部）或开启新列表
+            html += '<' + type + '>'
+            listStack.push({ type: type, indent: indent, liOpen: false })
+            html += '<li>'
+            listStack[listStack.length - 1].liOpen = true
+          }
+          html += inline(match[3])
+        }
+
         while (i < lines.length) {
           var line = lines[i]
           // 代码围栏
           var fence = /^\s*(```|~~~)\s*([\w+-]*)\s*$/.exec(line)
           if (fence !== null) {
-            closeList()
+            closeLists()
             var lang = fence[2]
             var code = []
             i += 1
@@ -738,7 +785,7 @@ window.__ModuleLoader__.load({
           }
           // 表格
           if (i + 1 < lines.length && isTableSep(lines[i + 1]) && line.indexOf('|') !== -1) {
-            closeList()
+            closeLists()
             var tableRows = [line]
             i += 2
             while (i < lines.length && lines[i].trim() !== '' && lines[i].indexOf('|') !== -1) {
@@ -750,7 +797,7 @@ window.__ModuleLoader__.load({
           // 标题
           var heading = /^(#{1,6})\s+(.*)$/.exec(line)
           if (heading !== null) {
-            closeList()
+            closeLists()
             var level = heading[1].length
             html += '<h' + level + '>' + inline(heading[2]) + '</h' + level + '>'
             i += 1
@@ -758,14 +805,14 @@ window.__ModuleLoader__.load({
           }
           // 分隔线
           if (/^\s*([-*_])\1{2,}\s*$/.test(line)) {
-            closeList()
+            closeLists()
             html += '<hr>'
             i += 1
             continue
           }
           // 引用
           if (/^\s*>\s?/.test(line)) {
-            closeList()
+            closeLists()
             var quote = []
             while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
               quote.push(lines[i].replace(/^\s*>\s?/, '')); i += 1
@@ -773,35 +820,32 @@ window.__ModuleLoader__.load({
             html += '<blockquote>' + quote.map(function (q) { return '<p>' + inline(q) + '</p>' }).join('') + '</blockquote>'
             continue
           }
-          // 无序列表
-          var ul = /^\s*[-*+]\s+(.*)$/.exec(line)
-          if (ul !== null) {
-            if (listType !== 'ul') { closeList(); html += '<ul>'; listType = 'ul' }
-            html += '<li>' + inline(ul[1]) + '</li>'
+          // 列表项（缩进产生嵌套层级；支持 - / * / + 与 1. 2. …）
+          var item = /^( *)((?:[-*+])|(?:\d+\.)) +(.*)$/.exec(line)
+          if (item !== null) {
+            pushListItem(item)
             i += 1
             continue
           }
-          // 有序列表
-          var ol = /^\s*\d+\.\s+(.*)$/.exec(line)
-          if (ol !== null) {
-            if (listType !== 'ol') { closeList(); html += '<ol>'; listType = 'ol' }
-            html += '<li>' + inline(ol[1]) + '</li>'
+          // 列表内的续行：比条目更缩进、非块级起始的非空行并入当前条目
+          if (listStack.length > 0 && listStack[listStack.length - 1].liOpen && /^\s+\S/.test(line)) {
+            html += '<br>' + inline(line.replace(/^\s+/, ''))
             i += 1
             continue
           }
           // 段落
-          closeList()
+          closeLists()
           if (line.trim() === '') {
             i += 1
             continue
           }
           var para = []
-          while (i < lines.length && lines[i].trim() !== '') {
+          while (i < lines.length && lines[i].trim() !== '' && !isBlockStart(lines[i])) {
             para.push(lines[i]); i += 1
           }
           html += '<p>' + para.map(inline).join('<br>') + '</p>'
         }
-        closeList()
+        closeLists()
         return html
       }
 
