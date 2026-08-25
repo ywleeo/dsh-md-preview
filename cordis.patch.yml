@@ -1,0 +1,13 @@
+# dsh-md-preview bundle patch: mounts the Markdown preview panel into a dsh web
+# composition.
+#
+# Host half (index.js) serves the preview routes; the client half (client.js)
+# renders the sidebar workspace-row trigger, the nested collapsible directory
+# tree with file counts, the inline Markdown renderer (headings/lists/tables/
+# code/blockquote/images/links) themed via DSH design tokens, and the header
+# actions (open in system app / refresh / close).
+#
+# Installed with: dsh plugin --profile web add "github:ywleeo/dsh-md-preview#main"
+- insert:
+    - id: dsh-md-preview
+      name: dsh-md-preview
