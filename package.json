@@ -1,6 +1,6 @@
 {
   "name": "dsh-md-preview",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "在 dsh Web 界面中阅读工作区里的 Markdown 文件：侧边栏入口 + 嵌套目录树 + 内联渲染（明暗主题自适应）",
   "license": "MIT",
   "type": "module",

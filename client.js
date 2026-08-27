@@ -29,7 +29,7 @@ window.__ModuleLoader__.load({
     // Markdown 官方风格图标（M↓ 徽章），用于侧边栏触发按钮与面板标题
     var ICON_MD = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7.5 15.5V8.5l3 3.5 3-3.5v7"/><path d="M16.5 8.5v3.5"/><path d="M15 10.5l1.5 1.5 1.5-1.5"/></svg>'
     var ICON_FOLDER = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
-    var ICON_CHEVRON = '<svg class="mdp-chev" viewBox="0 0 16 16" width="11" height="11" fill="currentColor"><path d="M5.5 3.2 10.8 8l-5.3 4.8z"/></svg>'
+    var ICON_CHEVRON = '<svg class="mdp-chev" viewBox="0 0 16 16" width="11" height="11" fill="currentColor"><path d="M3.2 5.5 12.8 5.5 8 10.8z"/></svg>'
     var ICON_FILE = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>'
     var ICON_REFRESH = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>'
     var ICON_CLOSE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'
