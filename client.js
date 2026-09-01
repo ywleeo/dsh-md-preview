@@ -308,8 +308,15 @@ window.__ModuleLoader__.load({
       var refreshBtn = panel.querySelector('.mdp-refresh')
       var openBtn = panel.querySelector('.mdp-open-btn')
       var pathEl = panel.querySelector('.mdp-path')
-      openBtn.target = '_blank'
-      openBtn.rel = 'noopener'
+      // 「打开」不再跳转新标签页：改为 fetch 触发宿主用系统默认应用打开文件，
+      // 只打开本地应用，不在 Chrome 里额外开一个 /read 标签页。
+      var currentOpenUrl = null
+      openBtn.addEventListener('click', function (event) {
+        event.preventDefault()
+        if (openBtn.getAttribute('data-disabled') === '1') return
+        if (currentOpenUrl === null) return
+        fetch(currentOpenUrl).catch(function () { /* 打开失败静默 */ })
+      })
 
       /** 顶栏显示当前文件路径（目录弱化 + 文件名加粗），无文件时显示占位。 */
       function setHeaderPath(relPath) {
@@ -494,7 +501,7 @@ window.__ModuleLoader__.load({
             // 无选中文件：重置顶栏路径与「打开」按钮
             state.selected = null
             setHeaderPath(null)
-            openBtn.removeAttribute('href')
+            currentOpenUrl = null
             openBtn.setAttribute('data-disabled', '1')
             showReaderMessage('从左侧选择文件阅读')
           }
@@ -620,8 +627,8 @@ window.__ModuleLoader__.load({
         var pathLabel = file !== null ? file.rel : path
         // 顶栏显示当前文件路径
         setHeaderPath(pathLabel)
-        // header「打开」按钮：有选中文件时激活
-        openBtn.href = apiUrl('/open', { p: path })
+        // header「打开」按钮：有选中文件时激活（记录 URL，点击时 fetch，不新开标签页）
+        currentOpenUrl = apiUrl('/open', { p: path })
         openBtn.setAttribute('data-disabled', '0')
         showReaderMessage('加载中…')
         fetch(apiUrl('/read', { p: path })).then(function (res) {
